@@ -63,45 +63,22 @@
             color: #ff0000;
             margin: 10px 0;
             text-align: center;
-            display: none; /* Se muestra dinámicamente */
         }
     </style>
 </head>
 <body>
     <div class="login-container">
         <h2>Login</h2>
-        <form id="loginForm">
-            <input type="text" id="username" placeholder="Usuario" required>
-            <input type="password" id="password" placeholder="Contraseña" required>
-            <button type="submit">Ingresar</button>
-            <div class="error-message" id="errorMessage"></div>
+        <form method="POST" id="loginForm">
+            <input type="text" name="username" placeholder="Usuario" required>
+            <input type="password" name="password" placeholder="Contraseña" required>
+            <button type="submit">Iniciar session</button>
+            {% if error %}
+                <div class="error-message">{{ error }}</div>
+            {% else %}
+                <div class="error-message" style="display:none;"></div>
+            {% endif %}
         </form>
     </div>
-
-    <script>
-        const form = document.getElementById('loginForm');
-        const errorMessage = document.getElementById('errorMessage');
-
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-
-            
-            // Simulación de respuesta:
-            let response = { success: false, message: "Usuario o contraseña incorrecta" };
-
-            // Mostrar mensaje de error si no es exitoso
-            if (!response.success) {
-                errorMessage.style.display = 'block';
-                errorMessage.textContent = response.message;
-            } else {
-                errorMessage.style.display = 'none';
-                // Redirigir a la página principal del sistema
-                window.location.href = '/dashboard';
-            }
-        });
-    </script>
 </body>
 </html>
