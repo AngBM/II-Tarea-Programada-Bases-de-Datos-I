@@ -53,7 +53,7 @@ def login_post():
 
 @app.route('/dashboard')
 def dashboard():
-    return "<h1>Bienvenido </h1>"
+    return "<h1>Bienvenido a la pagina principal </h1>"
 
 if __name__ == "__main__":
     app.run(debug=True)
