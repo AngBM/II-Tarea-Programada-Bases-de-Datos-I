@@ -12,6 +12,6 @@ connection = pyodbc.connect(
     "Connection Timeout=30;"
 )
 
-print(" Conexión exitosa")
+print(" Conexión exitosa a la base de datos ")
 cursor = connection.cursor()
 cursor.execute("")
