@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, make_response, render_template, request, redirect
 import pyodbc
 
 app = Flask(__name__)
@@ -41,7 +41,9 @@ def login_post():
         # Verificar resultado del SP
         if result and result.CodigoError == 0:
             # Login exitoso: redirigir a la página principal
-            return redirect('/dashboard')
+            response = make_response(redirect('/dashboard'))
+            response.set_cookie('username', username, max_age=60*60*2)  # 2 horas
+            return response
         else:
             # Login fallido: mostrar mensaje
             error_message = result.Descripcion if result else "Error desconocido"
@@ -50,6 +52,30 @@ def login_post():
     except Exception as e:
         # Error de conexión o SP
         return render_template('login.html', error=f"Error de conexión: {str(e)}")
+
+# Logout
+@app.route('/logout', methods=['POST'])
+def logout():
+    username = request.cookies.get('username')
+    ip_user = request.remote_addr  # Obtener IP del usuario
+
+    if username:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            # Llamada al SP de logout
+            cursor.execute("{CALL sp_logout (?, ?)}", (username, ip_user))
+            cursor.close()
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            return f"Error al cerrar sesión: {str(e)}"
+
+    # Redirigir al login y eliminar cookie
+    response = redirect(url_for('login'))
+    response.delete_cookie('username')
+    return response
+
 
 @app.route('/dashboard')
 def dashboard():
