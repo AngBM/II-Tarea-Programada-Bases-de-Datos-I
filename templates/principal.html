@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listado de Empleados</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        header button {
+            padding: 8px 16px;
+            background-color: #ff4d4d;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .filter-container {
+            margin-bottom: 20px;
+        }
+
+        .filter-container input[type="text"] {
+            padding: 8px;
+            width: 250px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .filter-container button {
+            padding: 8px 16px;
+            border-radius: 5px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+        }
+
+        table th, table td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+
+        table th {
+            background-color: #428ede;
+            color: white;
+        }
+
+        .actions button {
+            margin-right: 5px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .actions .consultar { background-color: #28a745; color: white; }
+        .actions .editar { background-color: #28a745; color: white;; }
+        .actions .eliminar { background-color: #28a745; color: white; }
+        .actions .movimientos { background-color: #28a745; color: white; }
+        .actions .insertar-mov { background-color: #28a745; color: white; }
+
+        .insert-emp-btn {
+            margin-top: 20px;
+            float: right;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Listado de Empleados</h1>
+    <form method="POST" action="/logout">
+        <button type="submit">Logout</button>
+    </form>
+</header>
+
+<div class="filter-container">
+    <form method="GET" action="/empleados">
+        <input type="text" name="filtro" placeholder="Buscar por nombre o documento">
+        <button type="submit">Filtrar</button>
+    </form>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Documento</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for empleado in empleados %}
+        <tr data-id="{{ empleado.Id }}" >
+            <td>{{ empleado.Nombre }}</td>
+            <td>{{ empleado.ValorDocumentoIdentidad }}</td>
+            <td class="actions">
+                <button class="consultar" onclick="location.href='/empleado/{{ empleado.Id }}/consultar'">Consultar</button>
+                <button class="editar" onclick="location.href='/empleado/{{ empleado.Id }}/editar'">Editar</button>
+                <button class="eliminar" onclick="location.href='/empleado/{{ empleado.Id }}/eliminar'">Eliminar</button>
+                <button class="movimientos" onclick="location.href='/empleado/{{ empleado.Id }}/movimientos'">Movimientos</button>
+                <button class="insertar-mov" onclick="location.href='/empleado/{{ empleado.Id }}/insertar_movimiento'">Insertar Movimiento</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<button class="insert-emp-btn" onclick="location.href='/empleado/insertar'">Insertar Empleado</button>
+
+</body>
+</html>
