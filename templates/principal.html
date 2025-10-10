@@ -52,6 +52,11 @@
             margin-left: 5px;
         }
 
+        .error-message {
+            color: red;
+            margin-top: 10px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -75,13 +80,9 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            background-color: #28a745;
+            color: white;
         }
-
-        .actions .consultar { background-color: #28a745; color: white; }
-        .actions .editar { background-color: #28a745; color: white;; }
-        .actions .eliminar { background-color: #28a745; color: white; }
-        .actions .movimientos { background-color: #28a745; color: white; }
-        .actions .insertar-mov { background-color: #28a745; color: white; }
 
         .insert-emp-btn {
             margin-top: 20px;
@@ -95,6 +96,43 @@
         }
 
     </style>
+    <script>
+        function validarFiltro(event) {
+            event.preventDefault(); // Evita que el formulario se envíe automáticamente
+
+            const filtro = document.getElementById('filtroInput').value.trim();
+
+            if (filtro === '') {
+                document.getElementById('errorMsg').textContent = '';
+                event.target.submit();
+                return;
+            }
+
+            const soloLetras = /^[a-zA-Z\s]+$/;
+            const soloNumeros = /^[0-9]+$/;
+
+            if (!soloLetras.test(filtro) && !soloNumeros.test(filtro)) {
+                document.getElementById('errorMsg').textContent = 
+                    'El filtro no puede contener letras y números mezclados.';
+                return false;
+            }
+
+            document.getElementById('errorMsg').textContent = '';
+            event.target.submit();
+        }
+
+        function accionEmpleado(nombre, doc, accion) {
+            const urlMap = {
+                consultar: `/empleado/consultar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
+                editar: `/empleado/editar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
+                eliminar: `/empleado/eliminar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
+                movimientos: `/empleado/movimientos?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
+                insertar_movimiento: `/empleado/insertar_movimiento?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`
+            };
+
+            window.location.href = urlMap[accion];
+        }
+    </script>
 </head>
 <body>
 
@@ -106,9 +144,10 @@
 </header>
 
 <div class="filter-container">
-    <form method="GET" action="/empleados">
-        <input type="text" name="filtro" placeholder="Buscar por nombre o documento">
+    <form method="GET" action="/empleados" onsubmit="validarFiltro(event)">
+        <input type="text" id="filtroInput" name="filtro" placeholder="Buscar por nombre o documento">
         <button type="submit">Filtrar</button>
+        <div class="error-message" id="errorMsg"></div>
     </form>
 </div>
 
@@ -122,22 +161,22 @@
     </thead>
     <tbody>
         {% for empleado in empleados %}
-        <tr data-id="{{ empleado.Id }}" >
+        <tr>
             <td>{{ empleado.Nombre }}</td>
             <td>{{ empleado.ValorDocumentoIdentidad }}</td>
             <td class="actions">
-                <button class="consultar" onclick="location.href='/empleado/{{ empleado.Id }}/consultar'">Consultar</button>
-                <button class="editar" onclick="location.href='/empleado/{{ empleado.Id }}/editar'">Editar</button>
-                <button class="eliminar" onclick="location.href='/empleado/{{ empleado.Id }}/eliminar'">Eliminar</button>
-                <button class="movimientos" onclick="location.href='/empleado/{{ empleado.Id }}/movimientos'">Movimientos</button>
-                <button class="insertar-mov" onclick="location.href='/empleado/{{ empleado.Id }}/insertar_movimiento'">Insertar Movimiento</button>
+                <button onclick="accionEmpleado('{{ empleado.Nombre }}', '{{ empleado.ValorDocumentoIdentidad }}', 'consultar')">Consultar</button>
+                <button onclick="accionEmpleado('{{ empleado.Nombre }}', '{{ empleado.ValorDocumentoIdentidad }}', 'editar')">Editar</button>
+                <button onclick="accionEmpleado('{{ empleado.Nombre }}', '{{ empleado.ValorDocumentoIdentidad }}', 'eliminar')">Eliminar</button>
+                <button onclick="accionEmpleado('{{ empleado.Nombre }}', '{{ empleado.ValorDocumentoIdentidad }}', 'movimientos')">Movimientos</button>
+                <button onclick="accionEmpleado('{{ empleado.Nombre }}', '{{ empleado.ValorDocumentoIdentidad }}', 'insertar_movimiento')">Insertar Movimiento</button>
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
-<button class="insert-emp-btn" onclick="location.href='/empleado/insertar'">Insertar Empleado</button>
+<button class="insert-emp-btn" onclick="window.location.href='/empleado/insertar'">Insertar Empleado</button>
 
 </body>
 </html>
