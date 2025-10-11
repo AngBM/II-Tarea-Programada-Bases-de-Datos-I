@@ -20,35 +20,54 @@ def get_db_connection():
 @app.route('/', methods=['GET'])
 def login():
     return render_template('login.html', error=None)
-
-# Procesar login
 @app.route('/', methods=['POST'])
 def login_post():
+    # Obtener datos del formulario
     username = request.form.get('username').strip()
     password = request.form.get('password').strip()
+    ip_user = request.remote_addr  # IP del usuario
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Llamar SP de login (ya maneja IP y bitácora)
-        cursor.execute("{CALL sp_login (?, ?, ?)}", (username, password, request.remote_addr))
+        
+        cursor.execute("""
+            DECLARE @outResultCode INT;
+            EXEC dbo.sp_login ?, ?, ?, @outResultCode OUTPUT;
+            SELECT @outResultCode AS outResultCode;
+        """, (username, password, ip_user))
+
+        # Obtenemos el resultado del SP
+        # Obtener el resultado del SP
         result = cursor.fetchone()
+        codigo_error = result[0] if result else -1  # aquí capturamos el OUTPUT
+
 
         cursor.close()
         conn.commit()
         conn.close()
 
-        if result and result.CodigoError == 0:
+        # Validar resultado del login
+        if codigo_error == 0:
             # Login exitoso
             response = make_response(redirect('/empleados'))
-            response.set_cookie('username', username, max_age=60*60*2)
+            response.set_cookie('username', username, max_age=60*60*2)  # 2 horas
             return response
+        elif codigo_error in (50001, 50002):
+            # Username o password incorrecto
+            error_message = "Usuario o contraseña incorrecta"
+        elif codigo_error == 50003:
+            # Login deshabilitado por intentos fallidos
+            error_message = "Demasiados intentos de login, intente de nuevo dentro de 10 minutos"
         else:
-            error_message = result.Descripcion if result else "Error desconocido"
-            return render_template('login.html', error=error_message)
+            error_message = "Error desconocido"
+
+        # Renderizar login con mensaje de error
+        return render_template('login.html', error=error_message)
 
     except Exception as e:
+        # Error de conexión o ejecución del SP
         return render_template('login.html', error=f"Error de conexión: {str(e)}")
 
 # Logout
@@ -71,6 +90,8 @@ def logout():
     response = redirect(url_for('login'))
     response.delete_cookie('username')
     return response
+
+
 
 # Listado y filtrado de empleados
 @app.route('/empleados', methods=['GET'])
