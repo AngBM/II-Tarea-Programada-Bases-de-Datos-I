@@ -80,20 +80,36 @@ def logout():
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute("{CALL sp_logout (?, ?)}", (username, ip_user))
+
+            # Llamada al SP de logout
+            cursor.execute("""
+                DECLARE @outResultCode INT;
+                EXEC dbo.sp_logout ?, ?, @outResultCode OUTPUT;
+                SELECT @outResultCode AS outResultCode;
+            """, (username, ip_user))
+
+            # Obtiene el resultado devuelto por el SP
+            result = cursor.fetchone()
+            result_code = result[0] if result else -1  # Devuelve el valor del OUTPUT
+
             cursor.close()
             conn.commit()
             conn.close()
-        except Exception as e:
-            return f"Error al cerrar sesión: {str(e)}"
 
+            # Evalua el resultado
+            if result_code == 0:
+                print(f"Logout exitoso para el usuario: {username}")
+            else:
+                print(f"Error en logout (Código {result_code}) para el usuario: {username}")
+
+        except Exception as e:
+            print(f"Error al cerrar sesión: {str(e)}")
+
+    # limpiar cookie y redirigir al login
     response = redirect(url_for('login'))
     response.delete_cookie('username')
     return response
 
-
-
-# Listado y filtrado de empleados
 @app.route('/empleados', methods=['GET'])
 def empleados():
     username = request.cookies.get('username')
@@ -107,24 +123,56 @@ def empleados():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Llamada al SP, envia filtro, username y IP
-        cursor.execute("{CALL sp_listar_empleados (?, ?, ?)}", (filtro if filtro else None, username, ip_user))
+        # Ejecuta el SP con el parámetro de salida
+        cursor.execute("""
+            DECLARE @outResultCode INT;
+            EXEC dbo.sp_listar_empleados ?, ?, ?, @outResultCode OUTPUT;
+            SELECT @outResultCode AS outResultCode;
+        """, (filtro if filtro else None, username, ip_user))
 
         empleados = []
-        for row in cursor.fetchall():
+
+        # 🔹 1. Primer conjunto: resultados del SELECT del SP (empleados)
+        rows = cursor.fetchall()
+        for row in rows:
             empleados.append({
                 'Nombre': row.Nombre,
                 'ValorDocumentoIdentidad': row.ValorDocumentoIdentidad
             })
 
+        # 🔹 2. Avanzar al siguiente conjunto (donde está el SELECT del OUT)
+        if cursor.nextset():
+            result_code_row = cursor.fetchone()
+            out_result_code = result_code_row.outResultCode if result_code_row else -1
+        else:
+            out_result_code = -1
+
         cursor.close()
         conn.commit()
         conn.close()
 
-        return render_template('principal.html', empleados=empleados, filtro=filtro)
+        # 🔹 3. Validación del código de salida
+        error_message = None
+        if out_result_code != 0:
+            error_message = f"Error en procedimiento. Código: {out_result_code}"
+
+        # 🔹 4. Renderizar HTML con datos
+        return render_template(
+            'principal.html',
+            empleados=empleados,
+            filtro=filtro,
+            error=error_message
+        )
 
     except Exception as e:
-        return render_template('principal.html', empleados=[], filtro=filtro, error=f"Error de conexión: {str(e)}")
+        return render_template(
+            'principal.html',
+            empleados=[],
+            filtro=filtro,
+            error=f"Error de conexión o ejecución: {str(e)}"
+        )
+
+
 
 
 if __name__ == "__main__":
