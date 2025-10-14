@@ -132,7 +132,7 @@ def empleados():
 
         empleados = []
 
-        # 🔹 1. Primer conjunto: resultados del SELECT del SP (empleados)
+        #  resultados del SELECT del SP (empleados)
         rows = cursor.fetchall()
         for row in rows:
             empleados.append({
@@ -140,7 +140,7 @@ def empleados():
                 'ValorDocumentoIdentidad': row.ValorDocumentoIdentidad
             })
 
-        # 🔹 2. Avanzar al siguiente conjunto (donde está el SELECT del OUT)
+        # Avanzar al siguiente conjunto donde está el SELECT del OUT)
         if cursor.nextset():
             result_code_row = cursor.fetchone()
             out_result_code = result_code_row.outResultCode if result_code_row else -1
@@ -151,12 +151,12 @@ def empleados():
         conn.commit()
         conn.close()
 
-        # 🔹 3. Validación del código de salida
+        # Validación del código de salida
         error_message = None
         if out_result_code != 0:
             error_message = f"Error en procedimiento. Código: {out_result_code}"
 
-        # 🔹 4. Renderizar HTML con datos
+        #  Renderizar HTML con datos
         return render_template(
             'principal.html',
             empleados=empleados,
@@ -172,6 +172,70 @@ def empleados():
             error=f"Error de conexión o ejecución: {str(e)}"
         )
 
+@app.route('/insertar_empleado', methods=['POST'])
+def insertar_empleado():
+    username = request.cookies.get('username')
+    if not username:
+        return redirect(url_for('login'))
+
+    valor_doc = request.form.get('valor_doc', '').strip()
+    nombre = request.form.get('nombre', '').strip()
+    nombre_puesto = request.form.get('puesto', '').strip()   # viene del dropdown
+    fecha_contratacion = request.form.get('fecha_contratacion', None)
+    ip_user = request.remote_addr
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Ejecutar el SP 
+        cursor.execute("""
+            DECLARE @outResultCode INT;
+            EXEC dbo.sp_insertar_empleado
+                @inValorDocumentoIdentidad = ?,
+                @inNombre = ?,
+                @inNombrePuesto = ?,
+                @inPostByUser = ?,
+                @inPostInIP = ?,
+                @inFechaContratacion = ?,
+                @outResultCode = @outResultCode OUTPUT;
+            SELECT @outResultCode AS outResultCode;
+        """, (valor_doc, nombre, nombre_puesto, username, ip_user, fecha_contratacion))
+
+        # Avanzar hasta el último conjunto y obtener el código de salida
+        while cursor.nextset():
+            pass
+        result = cursor.fetchone()
+        out_result_code = result.outResultCode if result else -1
+
+        cursor.close()
+        conn.commit()
+        conn.close()
+
+        #  mensaje según el código de salida
+        if out_result_code == 0:
+            mensaje = "✅ Empleado insertado correctamente."
+        elif out_result_code == 50004:
+            mensaje = "⚠️ El número de documento ya existe. No se puede insertar el empleado."
+        elif out_result_code == 50005:
+            mensaje = "⚠️ Ya existe un empleado con el mismo nombre."
+        elif out_result_code == 50009:
+            mensaje = "⚠️ El nombre solo puede contener letras y espacios."
+        elif out_result_code == 50010:
+            mensaje = "⚠️ El documento de identidad debe ser numérico."
+        elif out_result_code == 50008:
+            mensaje = "❌ Error interno de base de datos. Intente más tarde."
+        else:
+            mensaje = f"❌ Error desconocido (código {out_result_code})."
+
+        # Renderizar la página principal con el mensaje
+        return render_template('principal.html', mensaje=mensaje)
+
+    except Exception as e:
+        return render_template(
+            'principal.html',
+            mensaje=f"❌ Error de conexión o ejecución: {str(e)}"
+        )
 
 
 
