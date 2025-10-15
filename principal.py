@@ -16,7 +16,7 @@ def get_db_connection():
         "Connection Timeout=30;"
     )
 
-# Página principal de login
+# Pagina principal de login
 @app.route('/', methods=['GET'])
 def login():
     return render_template('login.html', error=None)
@@ -38,7 +38,7 @@ def login_post():
             SELECT @outResultCode AS outResultCode;
         """, (username, password, ip_user))
 
-        # Obtenemos el resultado del SP
+        
         # Obtener el resultado del SP
         result = cursor.fetchone()
         codigo_error = result[0] if result else -1  # aquí capturamos el OUTPUT
@@ -110,6 +110,8 @@ def logout():
     response.delete_cookie('username')
     return response
 
+#------------------------------------------------------------------------
+
 @app.route('/empleados', methods=['GET'])
 def empleados():
     username = request.cookies.get('username')
@@ -132,7 +134,7 @@ def empleados():
 
         empleados = []
 
-        #  resultados del SELECT del SP (empleados)
+        #  resultados del SELECT del SP 
         rows = cursor.fetchall()
         for row in rows:
             empleados.append({
@@ -140,7 +142,7 @@ def empleados():
                 'ValorDocumentoIdentidad': row.ValorDocumentoIdentidad
             })
 
-        # Avanzar al siguiente conjunto donde está el SELECT del OUT)
+        # Avanza al siguiente conjunto donde está el SELECT del OUT
         if cursor.nextset():
             result_code_row = cursor.fetchone()
             out_result_code = result_code_row.outResultCode if result_code_row else -1
@@ -151,26 +153,21 @@ def empleados():
         conn.commit()
         conn.close()
 
-        # Validación del código de salida
+        # Valida del código de salida
         error_message = None
         if out_result_code != 0:
             error_message = f"Error en procedimiento. Código: {out_result_code}"
 
-        #  Renderizar HTML con datos
-        return render_template(
-            'principal.html',
-            empleados=empleados,
-            filtro=filtro,
-            error=error_message
-        )
+        #  Renderiza HTML c
+        return render_template('principal.html',empleados=empleados,filtro=filtro,error=error_message)
 
     except Exception as e:
-        return render_template(
-            'principal.html',
-            empleados=[],
-            filtro=filtro,
-            error=f"Error de conexión o ejecución: {str(e)}"
-        )
+        return render_template('principal.html',empleados=[],filtro=filtro,error=f"Error de conexión o ejecución: {str(e)}")
+    
+#_------------------------------------------------------------------------
+@app.route('/insertar_empleado_form')
+def insertar_empleado_form():
+    return render_template('insertar_empleado.html')
 
 @app.route('/insertar_empleado', methods=['POST'])
 def insertar_empleado():
@@ -188,8 +185,8 @@ def insertar_empleado():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Ejecutar el SP 
-        cursor.execute("""
+       
+        out_result_code = cursor.execute("""
             DECLARE @outResultCode INT;
             EXEC dbo.sp_insertar_empleado
                 @inValorDocumentoIdentidad = ?,
@@ -200,17 +197,12 @@ def insertar_empleado():
                 @inFechaContratacion = ?,
                 @outResultCode = @outResultCode OUTPUT;
             SELECT @outResultCode AS outResultCode;
-        """, (valor_doc, nombre, nombre_puesto, username, ip_user, fecha_contratacion))
+        """, (valor_doc, nombre, nombre_puesto, username, ip_user, None)).fetchone().outResultCode
 
-        # Avanzar hasta el último conjunto y obtener el código de salida
-        while cursor.nextset():
-            pass
-        result = cursor.fetchone()
-        out_result_code = result.outResultCode if result else -1
-
-        cursor.close()
         conn.commit()
+        cursor.close()
         conn.close()
+
 
         #  mensaje según el código de salida
         if out_result_code == 0:
@@ -228,14 +220,13 @@ def insertar_empleado():
         else:
             mensaje = f"❌ Error desconocido (código {out_result_code})."
 
-        # Renderizar la página principal con el mensaje
-        return render_template('principal.html', mensaje=mensaje)
+        # Renderiza la página principal con el mensaje
+        return render_template('insertar_empleado.html', mensaje=mensaje)
+
 
     except Exception as e:
-        return render_template(
-            'principal.html',
-            mensaje=f"❌ Error de conexión o ejecución: {str(e)}"
-        )
+       return render_template('insertar_empleado.html', mensaje=f"❌ Error de conexión o ejecución: {str(e)}")
+
 
 
 

@@ -1,9 +1,6 @@
 import pyodbc
 import os
 
-# -----------------------------
-# 1️⃣ Definir ruta del XML
-# -----------------------------
 # Obtener la ruta del archivo actual (donde está este script .py)
 base_path = os.path.dirname(os.path.abspath(__file__))
 xml_path = os.path.join(base_path, 'archivoDatos.xml')  # Cambia el nombre si tu archivo es diferente
@@ -12,16 +9,14 @@ xml_path = os.path.join(base_path, 'archivoDatos.xml')  # Cambia el nombre si tu
 if not os.path.exists(xml_path):
     raise FileNotFoundError(f"No se encontró el archivo XML en: {xml_path}")
 
+
+# Leer contenido del XML
 # -----------------------------
-# 2️⃣ Leer contenido del XML
-# -----------------------------
-# Abrimos con utf-8-sig para quitar BOM si existe
+# Abri con utf-8-sig para quitar BOM si existe
 with open(xml_path, 'r', encoding='utf-8-sig') as f:
     xml_data = f.read()
 
-# -----------------------------
-# 3️⃣ Conectar a SQL Server
-# -----------------------------
+
 conn = pyodbc.connect(
     "DRIVER={ODBC Driver 18 for SQL Server};"
     "SERVER=tcp:servidorbdcmb19.database.windows.net,1433;"
@@ -34,11 +29,11 @@ conn = pyodbc.connect(
 )
 cursor = conn.cursor()
 
-# -----------------------------
-# 4️⃣ Ejecutar el SP
+
+#  Ejecutar el SP
 # -----------------------------
 try:
-    # Importante: pasar el parámetro como tupla para pyodbc
+    
     cursor.execute("EXEC sp_cargar_datos_xml @XMLData = ?", (xml_data,))
     conn.commit()
     print("✅ Carga de datos exitosa.")
