@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Movimiento</title>
+    <style>
+        body {
+            background-color: #f2f2f2;
+            font-family: Arial, sans-serif;
+        }
+
+        .contenedor {
+            width: 400px;
+            margin: 70px auto;
+            background-color: rgb(114, 168, 223);
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.2);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #3f87f5;
+            color: white;
+            font-size: 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2e6dd0;
+        }
+
+        .mensaje {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .mensaje.exito {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .mensaje.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .volver {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .volver:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<div class="contenedor">
+    <h2>Registrar Nuevo Movimiento</h2>
+
+    {% if mensaje %}
+        {% if "✅" in mensaje %}
+            <div class="mensaje exito">{{ mensaje }}</div>
+        {% elif "❌" in mensaje %}
+            <div class="mensaje error">{{ mensaje }}</div>
+        {% else %}
+            <div class="mensaje">{{ mensaje }}</div>
+        {% endif %}
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('insertar_movimiento') }}">
+        <label for="cedula">Cédula del empleado:</label>
+        <input type="text" id="cedula" name="cedula" required>
+
+        <label for="fecha_inicio">Fecha de inicio:</label>
+        <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+
+        <label for="fecha_fin">Fecha de fin:</label>
+        <input type="date" id="fecha_fin" name="fecha_fin" required>
+
+        <button type="submit">Registrar Movimiento</button>
+    </form>
+
+    <a href="{{ url_for('empleados') }}" class="volver">← Volver al listado</a>
+</div>
+
+</body>
+</html>
