@@ -226,7 +226,86 @@ def insertar_empleado():
 
     except Exception as e:
        return render_template('insertar_empleado.html', mensaje=f"❌ Error de conexión o ejecución: {str(e)}")
+        
+#-----------------------------------------------------------------------------------------------------------------
+def registrar_evento(tipo_evento, descripcion=""):
+    try:
+        usuario = session.get("usuario", "desconocido")
+        ip = request.remote_addr
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("{CALL sp_insertar_bitacora (?, ?, ?, ?)}", (tipo_evento, descripcion, usuario, ip))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("Error registrando evento:", e)
 
+#-----------------------------------------------------------------------------------------------------------------
+def obtener_error(codigo):
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("{CALL sp_obtener_error (?)}", (codigo,))
+        row = cur.fetchone()
+        conn.close()
+        return row[0] if row else "Error desconocido"
+    except Exception:
+        return "Error desconocido"
+
+#-----------------------------------------------------------------------------------------------------------------
+@app.route('/movimientos')
+def movimientos():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("{CALL sp_listar_movimientos}")
+        movimientos = [dict(zip([c[0] for c in cur.description], row)) for row in cur.fetchall()]
+        conn.close()
+        return render_template('movimientos.html', movimientos=movimientos)
+    except Exception as e:
+        registrar_evento("Error listar movimientos", str(e))
+        return render_template('error.html', codigo=500, mensaje="Error al listar movimientos")
+
+#-----------------------------------------------------------------------------------------------------------------
+@app.route('/insertar_movimiento', methods=['GET', 'POST'])
+def insertar_movimiento():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        cedula = request.form['cedula']
+        fecha_inicio = request.form['fecha_inicio']
+        fecha_fin = request.form['fecha_fin']
+
+        try:
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute("{CALL sp_insertar_movimiento (?, ?, ?)}", (cedula, fecha_inicio, fecha_fin))
+            conn.commit()
+            conn.close()
+
+            registrar_evento("Insertar movimiento exitoso", f"Cédula: {cedula}")
+            return render_template('insertar_movimiento.html', mensaje=f"✅ Movimiento registrado para {cedula}")
+
+        except Exception as e:
+            desc = obtener_error(501)
+            registrar_evento("Intento de insertar movimiento", f"{desc}, {cedula}")
+            return render_template('insertar_movimiento.html', mensaje=f"❌ {desc}")
+
+    return render_template('insertar_movimiento.html')
+
+#-----------------------------------------------------------------------------------------------------------------
+
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("error.html", codigo=404, mensaje="Página no encontrada"), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template("error.html", codigo=500, mensaje="Error interno del servidor"), 500
 
 
 
