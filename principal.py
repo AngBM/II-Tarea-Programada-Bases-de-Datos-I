@@ -41,7 +41,7 @@ def login_post():
         
         # Obtener el resultado del SP
         result = cursor.fetchone()
-        codigo_error = result[0] if result else -1  # aquí capturamos el OUTPUT
+        codigo_error = result[0] if result else -1  #  capturamos el OUTPUT
 
 
         cursor.close()
@@ -69,7 +69,8 @@ def login_post():
     except Exception as e:
         # Error de conexión o ejecución del SP
         return render_template('login.html', error=f"Error de conexión: {str(e)}")
-
+    
+#---------------------------------------------------------------------------------------------------------
 # Logout
 @app.route('/logout', methods=['POST'])
 def logout():

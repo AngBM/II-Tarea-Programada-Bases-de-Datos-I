@@ -156,6 +156,7 @@
         <tr>
             <th>Nombre</th>
             <th>Documento</th>
+
             <th>Acciones</th>
         </tr>
     </thead>
@@ -164,6 +165,7 @@
         <tr>
             <td>{{ empleado.Nombre }}</td>
             <td>{{ empleado.ValorDocumentoIdentidad }}</td>
+           
             <td class="actions">
                 <button onclick="accionEmpleado('{{ empleado.Nombre }}', '{{ empleado.ValorDocumentoIdentidad }}', 'consultar')">Consultar</button>
                 <button onclick="accionEmpleado('{{ empleado.Nombre }}', '{{ empleado.ValorDocumentoIdentidad }}', 'editar')">Editar</button>

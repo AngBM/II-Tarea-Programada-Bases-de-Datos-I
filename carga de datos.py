@@ -1,9 +1,9 @@
 import pyodbc
 import os
 
-# Obtener la ruta del archivo actual (donde está este script .py)
+# Obtener la ruta del archivo 
 base_path = os.path.dirname(os.path.abspath(__file__))
-xml_path = os.path.join(base_path, 'archivoDatos.xml')  # Cambia el nombre si tu archivo es diferente
+xml_path = os.path.join(base_path, 'archivoDatos.xml')  # 
 
 # Verificar que el archivo existe
 if not os.path.exists(xml_path):
@@ -33,12 +33,27 @@ cursor = conn.cursor()
 #  Ejecutar el SP
 # -----------------------------
 try:
-    
-    cursor.execute("EXEC sp_cargar_datos_xml @XMLData = ?", (xml_data,))
+    sql = """
+    DECLARE @outResultCode INT;
+    EXEC dbo.sp_cargar_datos_xml 
+        @XMLData = ?, 
+        @outResultCode = @outResultCode OUTPUT;
+    SELECT @outResultCode AS ResultCode;
+    """
+
+    cursor.execute(sql, (xml_data,))
+    result = cursor.fetchone()
+
+    if result and result.ResultCode == 0:
+        print("✅ Carga de datos exitosa.")
+    else:
+        print(f"⚠️ Carga completada con errores. Código devuelto: {result.ResultCode}")
+
     conn.commit()
-    print("✅ Carga de datos exitosa.")
+
 except Exception as e:
     print(f"❌ Error al cargar datos: {e}")
+
 finally:
     cursor.close()
     conn.close()
