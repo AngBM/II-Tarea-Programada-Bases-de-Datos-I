@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error {{ codigo }}</title>
+    <style>
+        body {
+            background-color: #c0aef4;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .contenedor {
+            background-color: #5ab7ff;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            width: 400px;
+        }
+        h1 { font-size: 60px; color: #fff; margin: 0; }
+        h2 { color: #222; margin-bottom: 20px; }
+        p { color: #333; }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #fff;
+            background-color: #007bff;
+            padding: 10px 20px;
+            border-radius: 6px;
+        }
+        a:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+<div class="contenedor">
+    <h1>{{ codigo }}</h1>
+    <h2>¡Ups! Algo salió mal </h2>
+    <p>{{ mensaje }}</p>
+    <a href="{{ url_for('login') }}">Volver al inicio</a>
+</div>
+</body>
+</html>
