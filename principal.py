@@ -1,7 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, make_response
+from flask import Flask, render_template, request, redirect, url_for, make_response, session
+from datetime import datetime
 import pyodbc
 
 app = Flask(__name__)
+app.secret_key = "a1b2c3d4"
 
 # Conexión a SQL Server
 def get_db_connection():
@@ -51,9 +53,8 @@ def login_post():
         # Validar resultado del login
         if codigo_error == 0:
             # Login exitoso
-            response = make_response(redirect('/empleados'))
-            response.set_cookie('username', username, max_age=60*60*2)  # 2 horas
-            return response
+            session['usuario'] = username  # 👈 guarda el usuario en la sesión
+            return redirect(url_for('empleados'))
         elif codigo_error in (50001, 50002):
             # Username o password incorrecto
             error_message = "Usuario o contraseña incorrecta"
@@ -72,9 +73,9 @@ def login_post():
     
 #---------------------------------------------------------------------------------------------------------
 # Logout
-@app.route('/logout', methods=['POST'])
+@app.route('/logout', methods=['GET','POST'])
 def logout():
-    username = request.cookies.get('username')
+    username = session.get('usuario')
     ip_user = request.remote_addr
 
     if username:
@@ -106,18 +107,20 @@ def logout():
         except Exception as e:
             print(f"Error al cerrar sesión: {str(e)}")
 
-    # limpiar cookie y redirigir al login
-    response = redirect(url_for('login'))
-    response.delete_cookie('username')
-    return response
+    # Limpiar la sesión y redirigir al login
+    session.clear()
+    return redirect(url_for('login'))
 
 #------------------------------------------------------------------------
 
 @app.route('/empleados', methods=['GET'])
 def empleados():
-    username = request.cookies.get('username')
+    # Verifica sesión
+    username = session.get('usuario')
     if not username:
         return redirect(url_for('login'))
+
+
 
     filtro = request.args.get('filtro', '').strip()
     ip_user = request.remote_addr
@@ -172,9 +175,9 @@ def insertar_empleado_form():
 
 @app.route('/insertar_empleado', methods=['POST'])
 def insertar_empleado():
-    username = request.cookies.get('username')
-    if not username:
+    if 'usuario' not in session:
         return redirect(url_for('login'))
+
 
     valor_doc = request.form.get('valor_doc', '').strip()
     nombre = request.form.get('nombre', '').strip()
@@ -233,10 +236,11 @@ def registrar_evento(tipo_evento, descripcion=""):
     try:
         usuario = session.get("usuario", "desconocido")
         ip = request.remote_addr
-        conn = get_connection()
+        conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("{CALL sp_insertar_bitacora (?, ?, ?, ?)}", (tipo_evento, descripcion, usuario, ip))
+        cur.execute("{CALL sp_insertar_bitacora (?, ?, ?, ?)}", (tipo_evento, descripcion, session.get('usuario', 'Sistema'),  request.remote_addr))
         conn.commit()
+        cur.close()
         conn.close()
     except Exception as e:
         print("Error registrando evento:", e)
@@ -244,7 +248,7 @@ def registrar_evento(tipo_evento, descripcion=""):
 #-----------------------------------------------------------------------------------------------------------------
 def obtener_error(codigo):
     try:
-        conn = get_connection()
+        conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("{CALL sp_obtener_error (?)}", (codigo,))
         row = cur.fetchone()
@@ -259,8 +263,9 @@ def movimientos():
     if 'usuario' not in session:
         return redirect(url_for('login'))
 
+
     try:
-        conn = get_connection()
+        conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("{CALL sp_listar_movimientos}")
         movimientos = [dict(zip([c[0] for c in cur.description], row)) for row in cur.fetchall()]
@@ -278,23 +283,39 @@ def insertar_movimiento():
 
     if request.method == 'POST':
         cedula = request.form['cedula']
-        fecha_inicio = request.form['fecha_inicio']
-        fecha_fin = request.form['fecha_fin']
+        id_tipo_movimiento = int(request.form['id_tipo_movimiento'])
+        monto = float(request.form['monto'])
+        fecha = request.form.get('fecha') or None
+        usuario = session.get('usuario')
+        ip = request.remote_addr
+
 
         try:
-            conn = get_connection()
+            conn = get_db_connection()
             cur = conn.cursor()
-            cur.execute("{CALL sp_insertar_movimiento (?, ?, ?)}", (cedula, fecha_inicio, fecha_fin))
+            cur.execute(
+                "{CALL sp_insertar_movimiento (?, ?, ?, ?, ?)}",
+                (cedula, id_tipo_movimiento, monto, usuario, ip)
+            )
             conn.commit()
-            conn.close()
 
-            registrar_evento("Insertar movimiento exitoso", f"Cédula: {cedula}")
+            registrar_evento(
+                "Insertar movimiento exitoso",
+                f"Cédula: {cedula}, Tipo: {id_tipo_movimiento}, Monto: {monto}"
+            )
             return render_template('insertar_movimiento.html', mensaje=f"✅ Movimiento registrado para {cedula}")
 
         except Exception as e:
             desc = obtener_error(501)
-            registrar_evento("Intento de insertar movimiento", f"{desc}, {cedula}")
-            return render_template('insertar_movimiento.html', mensaje=f"❌ {desc}")
+            registrar_evento(
+                "Intento de insertar movimiento",
+                f"{desc}, Cédula: {cedula}, Tipo: {id_tipo_movimiento}, Monto: {monto}"
+            )
+            mensaje = f"❌ {desc}"
+        finally:
+            conn.close()
+
+        return render_template('insertar_movimiento.html', mensaje=mensaje)
 
     return render_template('insertar_movimiento.html')
 

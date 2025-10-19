@@ -123,11 +123,11 @@
 
         function accionEmpleado(nombre, doc, accion) {
             const urlMap = {
-                consultar: `/empleado/consultar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
-                editar: `/empleado/editar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
-                eliminar: `/empleado/eliminar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
-                movimientos: `/empleado/movimientos?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
-                insertar_movimiento: `/empleado/insertar_movimiento?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`
+                consultar: `/consultar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
+                editar: `/editar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
+                eliminar: `/eliminar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
+                movimientos: `/movimientos?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
+                insertar_movimiento: `/insertar_movimiento?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`
             };
 
             window.location.href = urlMap[accion];
