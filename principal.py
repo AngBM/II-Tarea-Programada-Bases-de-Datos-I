@@ -328,12 +328,36 @@ def insertar_movimiento():
                 error="❌ El saldo no puede quedar negativo."
             )
 
-        # Insertar el movimiento (SP)
-        cur.execute("{CALL sp_insertar_movimiento (?, ?, ?, ?, ?)}", (doc, tipo, monto, usuario, ip))
+        #  Insertar el movimiento usando el SP y obtener el código de resultado
+        cur.execute("""
+            DECLARE @result INT;
+            EXEC dbo.sp_insertar_movimiento
+                @inValorDocumentoIdentidad = ?,
+                @inIdTipoMovimiento = ?,
+                @inMonto = ?,
+                @inPostByUser = ?,
+                @inPostInIP = ?,
+                @outResultCode = @result OUTPUT;
+            SELECT @result;
+        """, (doc, tipo, monto, usuario, ip))
+
+        result_code = cur.fetchone()[0]
         conn.commit()
         conn.close()
-        return redirect(url_for('movimientos', nombre=request.args.get('nombre') or request.form.get('nombre'), doc=doc))
 
+        #  Validar el código de salida del SP
+        if result_code == 50011:
+            return render_template(
+                'insertar_movimiento.html',
+                nombre=request.form.get('nombre'),
+                doc=doc,
+                saldo=saldo_actual,
+                tipos=[],
+                error="⚠️ No se puede registrar el movimiento: dejaría el saldo negativo."
+            )
+
+        # Si todo sale bien, redirigir
+        return redirect(url_for('movimientos', nombre=request.args.get('nombre') or request.form.get('nombre'), doc=doc))
 
 
 #-----------------------------------------------------------------------------------------------------------------
@@ -427,7 +451,7 @@ def eliminar_empleado():
     cur = conn.cursor()
 
     try:
-        # 🔹 Ejecutar SP de eliminación (borrado lógico o intento)
+        # Ejecutar SP de eliminación 
         cur.execute("{CALL sp_eliminar_empleado(?, ?, ?, ?)}", (doc, confirmado, usuario, ip))
         conn.commit()
 
