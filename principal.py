@@ -53,7 +53,7 @@ def login_post():
         # Validar resultado del login
         if codigo_error == 0:
             # Login exitoso
-            session['usuario'] = username  # 👈 guarda el usuario en la sesión
+            session['usuario'] = username  # 
             return redirect(url_for('empleados'))
         elif codigo_error in (50001, 50002):
             # Username o password incorrecto
