@@ -1,4 +1,4 @@
-CREATE PROCEDURE sp_eliminar_empleado
+ALTER PROCEDURE [dbo].[sp_eliminar_empleado]
     @ValorDocumentoIdentidad NVARCHAR(20),
     @Confirmado BIT,
     @PostByUser NVARCHAR(50),
@@ -19,8 +19,11 @@ BEGIN
         RETURN;
     END
 
-    DELETE FROM Empleado WHERE ValorDocumentoIdentidad = @ValorDocumentoIdentidad;
+    UPDATE Empleado
+    SET EsActivo = 0
+    WHERE ValorDocumentoIdentidad = @ValorDocumentoIdentidad;
+
     INSERT INTO BitacoraEvento VALUES(8, CONCAT(@ValorDocumentoIdentidad, ', ', @Nombre, ', ', @Puesto, ', ', @Saldo),
                                       @IdUser, @PostInIP, GETDATE());
 END
-GO
+

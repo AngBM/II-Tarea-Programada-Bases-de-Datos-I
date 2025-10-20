@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Empleado</title>
+    <style>
+        body {
+            background-color: #e8f4ff;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .card {
+            background-color: #fff;
+            max-width: 500px;
+            margin: 50px auto;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            padding: 30px;
+        }
+        h2 {
+            color: #007bff;
+            text-align: center;
+        }
+        p { font-size: 18px; margin: 8px 0; }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+        a:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Consulta de Empleado</h2>
+        {% if empleado %}
+        <p><strong>Cedula:</strong> {{ empleado[1] }}</p>
+        <p><strong>Nombre:</strong> {{ empleado[2] }}</p>
+        <p><strong>Puesto:</strong> {{ empleado[4] }}</p>
+        <p><strong>Saldo Vacaciones:</strong> {{ empleado[5] }}</p>
+        {% else %}
+        <p>No se encontr� informaci�n del empleado.</p>
+        {% endif %}
+        <a href="{{ url_for('empleados') }}">Volver</a>
+    </div>
+</body>
+</html>

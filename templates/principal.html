@@ -18,39 +18,39 @@
             margin-bottom: 20px;
         }
 
-        header h1 {
-            margin: 0;
-        }
+            header h1 {
+                margin: 0;
+            }
 
-        header button {
-            padding: 8px 16px;
-            background-color: #ff4d4d;
-            border: none;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+            header button {
+                padding: 8px 16px;
+                background-color: #ff4d4d;
+                border: none;
+                color: white;
+                border-radius: 5px;
+                cursor: pointer;
+            }
 
         .filter-container {
             margin-bottom: 20px;
         }
 
-        .filter-container input[type="text"] {
-            padding: 8px;
-            width: 250px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
+            .filter-container input[type="text"] {
+                padding: 8px;
+                width: 250px;
+                border-radius: 5px;
+                border: 1px solid #ccc;
+            }
 
-        .filter-container button {
-            padding: 8px 16px;
-            border-radius: 5px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-            cursor: pointer;
-            margin-left: 5px;
-        }
+            .filter-container button {
+                padding: 8px 16px;
+                border-radius: 5px;
+                border: none;
+                background-color: #007bff;
+                color: white;
+                cursor: pointer;
+                margin-left: 5px;
+            }
 
         .error-message {
             color: red;
@@ -63,16 +63,16 @@
             background-color: white;
         }
 
-        table th, table td {
-            padding: 10px;
-            border: 1px solid #ccc;
-            text-align: left;
-        }
+            table th, table td {
+                padding: 10px;
+                border: 1px solid #ccc;
+                text-align: left;
+            }
 
-        table th {
-            background-color: #428ede;
-            color: white;
-        }
+            table th {
+                background-color: #428ede;
+                color: white;
+            }
 
         .actions button {
             margin-right: 5px;
@@ -94,7 +94,6 @@
             border: none;
             cursor: pointer;
         }
-
     </style>
     <script>
         function validarFiltro(event) {
@@ -112,7 +111,7 @@
             const soloNumeros = /^[0-9]+$/;
 
             if (!soloLetras.test(filtro) && !soloNumeros.test(filtro)) {
-                document.getElementById('errorMsg').textContent = 
+                document.getElementById('errorMsg').textContent =
                     'El filtro no puede contener letras y números mezclados.';
                 return false;
             }
@@ -121,17 +120,27 @@
             event.target.submit();
         }
 
-        function accionEmpleado(nombre, doc, accion) {
-            const urlMap = {
-                consultar: `/consultar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
-                editar: `/editar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
-                eliminar: `/eliminar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
-                movimientos: `/movimientos?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
-                insertar_movimiento: `/insertar_movimiento?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`
-            };
-
-            window.location.href = urlMap[accion];
+        function confirmarEliminacion(nombre, doc) {
+            const mensaje = `¿Está seguro de eliminar este empleado?\n\nNombre: ${nombre}\nDocumento: ${doc}`;
+            if (confirm(mensaje)) {
+                // ✅ Confirmado
+                window.location.href = `/eliminar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}&confirmar=1`;
+            } else {
+                // ❌ Cancelado
+                window.location.href = `/eliminar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}&confirmar=0`;
+            }
         }
+
+        function accionEmpleado(nombre, doc, accion) {
+        const urlMap = {
+            consultar: `/consultar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
+        actualizar: `/actualizar?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
+        movimientos: `/movimientos?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`,
+        insertar_movimiento: `/insertar_movimiento?nombre=${encodeURIComponent(nombre)}&doc=${encodeURIComponent(doc)}`
+        };
+        window.location.href = urlMap[accion];
+    }
+
     </script>
 </head>
 <body>
@@ -168,8 +177,8 @@
            
             <td class="actions">
                 <button onclick="accionEmpleado('{{ empleado.Nombre }}', '{{ empleado.ValorDocumentoIdentidad }}', 'consultar')">Consultar</button>
-                <button onclick="accionEmpleado('{{ empleado.Nombre }}', '{{ empleado.ValorDocumentoIdentidad }}', 'editar')">Editar</button>
-                <button onclick="accionEmpleado('{{ empleado.Nombre }}', '{{ empleado.ValorDocumentoIdentidad }}', 'eliminar')">Eliminar</button>
+                <button onclick="accionEmpleado('{{ empleado.Nombre }}', '{{ empleado.ValorDocumentoIdentidad }}', 'actualizar')">Actualizar</button>
+                <button onclick="confirmarEliminacion('{{ empleado.Nombre }}', '{{ empleado.ValorDocumentoIdentidad }}')">Eliminar</button>
                 <button onclick="accionEmpleado('{{ empleado.Nombre }}', '{{ empleado.ValorDocumentoIdentidad }}', 'movimientos')">Movimientos</button>
                 <button onclick="accionEmpleado('{{ empleado.Nombre }}', '{{ empleado.ValorDocumentoIdentidad }}', 'insertar_movimiento')">Insertar Movimiento</button>
             </td>

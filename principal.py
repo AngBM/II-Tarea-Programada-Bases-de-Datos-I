@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, make_response, session
+from flask import Flask, render_template, request, redirect, url_for, make_response, session, flash
 from datetime import datetime
 import pyodbc
 
@@ -184,6 +184,7 @@ def insertar_empleado():
     nombre_puesto = request.form.get('puesto', '').strip()   # viene del dropdown
     fecha_contratacion = request.form.get('fecha_contratacion', None)
     ip_user = request.remote_addr
+    username = session.get('usuario')
 
     try:
         conn = get_db_connection()
@@ -263,17 +264,19 @@ def movimientos():
     if 'usuario' not in session:
         return redirect(url_for('login'))
 
+    doc = request.args.get('doc')
+    nombre = request.args.get('nombre')
+    username = session.get('usuario')
+    ip = request.remote_addr
 
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("{CALL sp_listar_movimientos}")
-        movimientos = [dict(zip([c[0] for c in cur.description], row)) for row in cur.fetchall()]
-        conn.close()
-        return render_template('movimientos.html', movimientos=movimientos)
-    except Exception as e:
-        registrar_evento("Error listar movimientos", str(e))
-        return render_template('error.html', codigo=500, mensaje="Error al listar movimientos")
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("{CALL sp_listar_movimientos (?, ?, ?, ?, ?)}", (doc, None, None, username, ip))
+    movimientos = [dict(zip([c[0] for c in cur.description], row)) for row in cur.fetchall()]
+    conn.close()
+
+    return render_template('movimientos.html', nombre=nombre, doc=doc, movimientos=movimientos)
+
 
 #-----------------------------------------------------------------------------------------------------------------
 @app.route('/insertar_movimiento', methods=['GET', 'POST'])
@@ -281,46 +284,174 @@ def insertar_movimiento():
     if 'usuario' not in session:
         return redirect(url_for('login'))
 
-    if request.method == 'POST':
-        cedula = request.form['cedula']
-        id_tipo_movimiento = int(request.form['id_tipo_movimiento'])
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if request.method == 'GET':
+        nombre = request.args.get('nombre')
+        doc = request.args.get('doc')
+
+        # Obtener saldo actual del empleado
+        cur.execute("SELECT SaldoVacaciones FROM Empleado WHERE ValorDocumentoIdentidad = ?", (doc,))
+        saldo = cur.fetchone()[0]
+
+        # Cargar tipos de movimiento
+        cur.execute("SELECT Id, Nombre FROM TipoMovimiento")
+        tipos = [dict(zip([c[0] for c in cur.description], row)) for row in cur.fetchall()]
+
+        conn.close()
+        return render_template('insertar_movimiento.html', nombre=nombre, doc=doc, saldo=saldo, tipos=tipos)
+
+    else:
+        doc = request.form['doc']
+        tipo = int(request.form['tipo'])
         monto = float(request.form['monto'])
-        fecha = request.form.get('fecha') or None
         usuario = session.get('usuario')
         ip = request.remote_addr
 
+        # Obtener saldo actual del empleado
+        cur.execute("SELECT SaldoVacaciones FROM Empleado WHERE ValorDocumentoIdentidad = ?", (doc,))
+        saldo_actual = cur.fetchone()[0]
 
-        try:
-            conn = get_db_connection()
-            cur = conn.cursor()
-            cur.execute(
-                "{CALL sp_insertar_movimiento (?, ?, ?, ?, ?)}",
-                (cedula, id_tipo_movimiento, monto, usuario, ip)
-            )
-            conn.commit()
+        # Verificar si el movimiento dejaría saldo negativo
+        cur.execute("SELECT Nombre FROM TipoMovimiento WHERE Id = ?", (tipo,))
+        tipo_nombre = cur.fetchone()[0]
 
-            registrar_evento(
-                "Insertar movimiento exitoso",
-                f"Cédula: {cedula}, Tipo: {id_tipo_movimiento}, Monto: {monto}"
-            )
-            return render_template('insertar_movimiento.html', mensaje=f"✅ Movimiento registrado para {cedula}")
-
-        except Exception as e:
-            desc = obtener_error(501)
-            registrar_evento(
-                "Intento de insertar movimiento",
-                f"{desc}, Cédula: {cedula}, Tipo: {id_tipo_movimiento}, Monto: {monto}"
-            )
-            mensaje = f"❌ {desc}"
-        finally:
+        if tipo_nombre in ('Vacaciones', 'Ajuste negativo') and saldo_actual - monto < 0:
             conn.close()
+            return render_template(
+                'insertar_movimiento.html',
+                nombre=request.form.get('nombre'),
+                doc=doc,
+                saldo=saldo_actual,
+                tipos=[],
+                error="❌ El saldo no puede quedar negativo."
+            )
 
-        return render_template('insertar_movimiento.html', mensaje=mensaje)
+        # Insertar el movimiento (SP)
+        cur.execute("{CALL sp_insertar_movimiento (?, ?, ?, ?, ?)}", (doc, tipo, monto, usuario, ip))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('movimientos', nombre=request.args.get('nombre') or request.form.get('nombre'), doc=doc))
 
-    return render_template('insertar_movimiento.html')
+
 
 #-----------------------------------------------------------------------------------------------------------------
 
+@app.route('/consultar')
+def consultar_empleado():
+    doc = request.args.get('doc')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("{CALL sp_consultar_empleado(?)}", (doc,))
+    empleado = cur.fetchone()
+    conn.close()
+    return render_template('consultar_empleado.html', empleado=empleado)
+
+#--------------------------------------------------------------------------------------------------
+@app.route('/actualizar', methods=['GET', 'POST'])
+def actualizar():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+
+        if request.method == 'GET':
+            nombre = request.args.get('nombre')
+            doc = request.args.get('doc')
+
+            sql = f"EXEC sp_consultar_empleado '{doc}'"
+            cur.execute(sql)
+            fila = cur.fetchone()
+
+            if not fila:
+                return render_template('error.html', codigo=404, mensaje="Empleado no encontrado")
+
+            columnas = [col[0] for col in cur.description]
+            empleado = dict(zip(columnas, fila))
+
+            cur.execute("SELECT Id, Nombre FROM Puesto")
+            puestos = [dict(zip([c[0] for c in cur.description], row)) for row in cur.fetchall()]
+
+            return render_template('actualizar_empleado.html', empleado=empleado, puestos=puestos)
+
+        else:
+            doc_actual = request.form.get('doc_actual')
+            nuevo_doc = request.form.get('doc')
+            nuevo_nombre = request.form.get('nombre')
+            nuevo_puesto = int(request.form.get('puesto'))
+            usuario = session.get('usuario')
+            ip = request.remote_addr
+
+            sql = (
+                "EXEC sp_actualizar_empleado "
+                f"'{doc_actual}', '{nuevo_doc}', '{nuevo_nombre}', {nuevo_puesto}, '{usuario}', '{ip}'"
+            )
+
+            cur.execute(sql)
+            conn.commit()
+
+            flash(" Empleado actualizado correctamente.", "success")
+            return redirect(url_for('empleados'))
+
+    except Exception as e:
+        if conn and not conn.closed:
+            conn.rollback()
+        print("Error en actualizar_empleado:", e)
+        return render_template('error.html', codigo=500, mensaje=str(e))
+
+    finally:
+        conn.close()
+
+
+
+
+
+
+#------------------------------------------------------------------------------------------------------------
+@app.route('/eliminar')
+def eliminar_empleado():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+
+    doc = request.args.get('doc')
+    nombre = request.args.get('nombre')
+    usuario = session.get('usuario')
+    ip = request.remote_addr
+    confirmado = int(request.args.get('confirmar', '0'))  # 0 si no se confirma
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        # 🔹 Ejecutar SP de eliminación (borrado lógico o intento)
+        cur.execute("{CALL sp_eliminar_empleado(?, ?, ?, ?)}", (doc, confirmado, usuario, ip))
+        conn.commit()
+
+        if confirmado == 1:
+            flash(f" Empleado {nombre} ({doc}) eliminado correctamente (borrado lógico).", "success")
+        else:
+            flash(f" Intento de eliminación registrado para {nombre} ({doc}).", "info")
+
+        return redirect(url_for('empleados'))
+
+    except Exception as e:
+        if conn and not conn.closed:
+            conn.rollback()
+        print("Error al eliminar empleado:", e)
+        return render_template('error.html', codigo=500, mensaje=str(e))
+
+    finally:
+        conn.close()
+
+
+#---------------------------------------------------------------------------------------------------------
+
+
+#---------------------------------------------------------------------------------------------------------
 @app.errorhandler(404)
 def not_found(e):
     return render_template("error.html", codigo=404, mensaje="Página no encontrada"), 404

@@ -14,7 +14,7 @@
 
         .contenedor {
             width: 90%;
-            max-width: 900px;
+            max-width: 1000px;
             margin: 50px auto;
             background-color: #5ab7ff;
             border-radius: 10px;
@@ -49,9 +49,9 @@
             cursor: pointer;
         }
 
-        button:hover {
-            background-color: #0056b3;
-        }
+            button:hover {
+                background-color: #0056b3;
+            }
 
         table {
             width: 100%;
@@ -79,49 +79,56 @@
             font-weight: bold;
         }
 
-        .volver:hover {
-            text-decoration: underline;
-        }
+            .volver:hover {
+                text-decoration: underline;
+            }
     </style>
 </head>
 <body>
-<div class="contenedor">
-    <h2>Movimientos de Vacaciones</h2>
+    <div class="contenedor">
+        <h2>Movimientos de {{ nombre }} ({{ doc }})</h2>
 
-    <div class="filtros">
-        <form method="GET" action="{{ url_for('movimientos') }}">
-            <label for="desde">Desde:</label>
-            <input type="date" id="desde" name="desde" required>
-            <label for="hasta">Hasta:</label>
-            <input type="date" id="hasta" name="hasta" required>
-            <button type="submit">Filtrar</button>
-        </form>
+        <div class="filtros">
+            <form method="GET" action="{{ url_for('movimientos') }}">
+                <input type="hidden" name="nombre" value="{{ nombre }}">
+                <input type="hidden" name="doc" value="{{ doc }}">
+                <label for="desde">Desde:</label>
+                <input type="date" id="desde" name="desde">
+                <label for="hasta">Hasta:</label>
+                <input type="date" id="hasta" name="hasta">
+                <button type="submit">Filtrar</button>
+            </form>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Tipo de Movimiento</th>
+                    <th>Monto (días)</th>
+                    <th>Nuevo Saldo</th>
+                    <th>Usuario que Registró</th>
+                    <th>IP</th>
+                    <th>PostTime</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mov in movimientos %}
+                <tr>
+                    <td>{{ mov.FechaMovimiento }}</td>
+                    <td>{{ mov.TipoMovimiento }}</td>
+                    <td>{{ mov.Monto }}</td>
+                    <td>{{ mov.NuevoSaldo }}</td>
+                    <td>{{ mov.UsuarioRegistro }}</td>
+                    <td>{{ mov.PostInIP }}</td>
+                    <td>{{ mov.PostTime }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <a href="{{ url_for('empleados') }}" class="volver">← Volver al listado de empleados</a>
     </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Empleado</th>
-                <th>Documento</th>
-                <th>Fecha Inicio</th>
-                <th>Fecha Fin</th>
-                <th>Días</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for mov in movimientos %}
-            <tr>
-                <td>{{ mov.Nombre }}</td>
-                <td>{{ mov.ValorDocumentoIdentidad }}</td>
-                <td>{{ mov.FechaInicio }}</td>
-                <td>{{ mov.FechaFin }}</td>
-                <td>{{ mov.Dias }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <a href="{{ url_for('empleados') }}" class="volver">← Volver al listado de empleados</a>
-</div>
 </body>
 </html>
+

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eliminar Empleado</title>
+    <style>
+        body {
+            background-color: #fff8f8;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .card {
+            background-color: #fff;
+            max-width: 500px;
+            margin: 50px auto;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            padding: 30px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #dc3545;
+        }
+
+        p {
+            font-size: 18px;
+        }
+
+        a {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: white;
+        }
+
+        .confirmar {
+            background-color: #dc3545;
+        }
+
+            .confirmar:hover {
+                background-color: #c82333;
+            }
+
+        .cancelar {
+            background-color: #6c757d;
+        }
+
+            .cancelar:hover {
+                background-color: #5a6268;
+            }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Eliminar Empleado</h2>
+        <p>�Est� seguro que desea eliminar al empleado <b>{{ nombre }}</b> con c�dula <b>{{ doc }}</b>?</p>
+        <a class="confirmar" href="{{ url_for('eliminar_empleado', doc=doc, nombre=nombre, confirmar=1) }}">S�, eliminar</a>
+        <a class="cancelar" href="{{ url_for('empleados') }}">Cancelar</a>
+    </div>
+</body>
+</html>

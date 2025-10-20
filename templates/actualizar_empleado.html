@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Insertar Movimiento</title>
+    <title>Actualizar Empleado</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,7 +14,7 @@
 
         .contenedor {
             width: 90%;
-            max-width: 500px;
+            max-width: 600px;
             margin: 50px auto;
             background-color: #5ab7ff;
             border-radius: 10px;
@@ -69,61 +69,30 @@
             .volver:hover {
                 text-decoration: underline;
             }
-
-        .dato {
-            background-color: white;
-            padding: 8px;
-            border-radius: 6px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-        }
-
-        .mensaje-error {
-            background-color: #ffdddd;
-            color: #b30000;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 10px;
-            text-align: center;
-        }
     </style>
 </head>
 <body>
     <div class="contenedor">
-        <h2>Insertar Movimiento</h2>
+        <h2>Actualizar Datos del Empleado</h2>
 
-        <form method="POST" action="{{ url_for('insertar_movimiento') }}">
-            <!-- Datos del empleado (solo lectura) -->
+        <form method="POST" action="{{ url_for('actualizar') }}">
             <label>Documento de Identidad:</label>
-            <div class="dato">{{ doc }}</div>
+            <input type="text" name="doc" value="{{ empleado.ValorDocumentoIdentidad }}" required>
 
-            <label>Nombre del Empleado:</label>
-            <div class="dato">{{ nombre }}</div>
+            <label>Nombre:</label>
+            <input type="text" name="nombre" value="{{ empleado.Nombre }}" required>
 
-            <label>Saldo Vacaciones Actual:</label>
-            <div class="dato">{{ saldo }}</div>
-
-            <!-- Selección de tipo de movimiento -->
-            <label for="tipo">Tipo de Movimiento:</label>
-            <select name="tipo" id="tipo" required>
-                {% for tipo in tipos %}
-                <option value="{{ tipo.Id }}">{{ tipo.Nombre }}</option>
+            <label>Puesto:</label>
+            <select name="puesto" required>
+                {% for p in puestos %}
+                <option value="{{ p.Id }}" {% if p.Id= =empleado.IdPuesto %}selected{% endif %}>{{ p.Nombre }}</option>
                 {% endfor %}
             </select>
 
-            <!-- Monto -->
-            <label for="monto">Monto (días):</label>
-            <input type="number" name="monto" id="monto" step="0.01" min="0.01" required>
-
-            <input type="hidden" name="doc" value="{{ doc }}">
-            <button type="submit">Registrar Movimiento</button>
+            <button type="submit">Guardar Cambios</button>
         </form>
 
-        {% if error %}
-        <div class="mensaje-error">{{ error }}</div>
-        {% endif %}
-
-        <a href="{{ url_for('empleados') }}" class="volver">← Volver al listado de empleados</a>
+        <a href="{{ url_for('empleados') }}" class="volver">← Volver al listado</a>
     </div>
 </body>
 </html>
